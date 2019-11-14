@@ -6,6 +6,29 @@
     android:background="#fff"
     >
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@color/colorTitle"
+        >
+        <ImageView
+            android:id="@+id/back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@mipmap/back"
+            android:layout_centerVertical="true"
+            android:scaleType="center"
+            />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="我的文档"
+            android:textColor="#fff"
+            android:layout_centerInParent="true"
+            android:textSize="18sp"
+            />
+    </RelativeLayout>
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/ppt_list"
         android:layout_width="match_parent"

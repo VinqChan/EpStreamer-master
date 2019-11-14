@@ -1,7 +1,9 @@
 package net.ossrs.yasea.demo;
 
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.content.ClipData;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
@@ -82,7 +84,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
     private String nickname;
     private String headimgurl;
     private IWXAPI api;
-    private ValueCallback<Uri[]> mUploadCallbackAboveFive;
+    public static ValueCallback<Uri[]> mUploadCallbackAboveFive;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -257,11 +259,6 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
                 mUploadCallbackAboveFive = filePathCallback;
-                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-                i.addCategory(Intent.CATEGORY_OPENABLE);
-                i.setType("*/*");
-                // i.setDataAndType(Uri.fromFile(new File(FilePath)), "*/*");
-                startActivityForResult(Intent.createChooser(i, "File Chooser"), 1);
 
                 return true;
             }
@@ -302,8 +299,8 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
                                  }
         );
         regToWx();
-        getFileMsg();
-     //   openFile();
+        //getFileMsg();
+        //openFile();
     }
 
     @Override
@@ -314,6 +311,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         Uri[] results = null;
         if (resultCode == Activity.RESULT_OK) {
             if (data != null) {
+               // String dataString = data.getStringExtra("result");
                 String dataString = data.getDataString();
                 ClipData clipData = data.getClipData();
                 if (clipData != null) {
@@ -328,12 +326,16 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
                 if (dataString != null) {
                     Log.e(TAG, "onActivityResult: dataString:" + dataString);
                     results = new Uri[]{Uri.parse(dataString)};
+
+                        mUploadCallbackAboveFive.onReceiveValue(results);
+                        mUploadCallbackAboveFive = null;
+
                 }
             }
         }
-        Log.e(TAG, "onActivityResult: " + results[0]);
-        mUploadCallbackAboveFive.onReceiveValue(results);
-        mUploadCallbackAboveFive = null;
+
+
+
         super.onActivityResult(requestCode, resultCode, data);
     }
 
@@ -346,8 +348,8 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
 //        startActivityForResult(intent, 1);
         Intent i = new Intent(Intent.ACTION_GET_CONTENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
-        //i.setType("*/*");
-        i.setDataAndType(Uri.fromFile(new File(FilePath).getParentFile()), "*/*");
+        i.setType("file/*");
+       // i.setDataAndType(Uri.fromFile(new File(FilePath).getParentFile()), "*/*");
         startActivityForResult(Intent.createChooser(i, "File Chooser"), 1);
     }
 
@@ -375,7 +377,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
                 fileName = source.getName();
                 Log.e(TAG, "getFileMsg: " + fileName);
             }
-
+            Log.e(TAG, "getFileMsg: "+source.length()+","+source.getPath()+","+source.getAbsolutePath() );
             FileUtils.copyFile(source.getPath(), FilePath + File.separator + fileName, new FileUtils.OnReplaceListener() {
 
                 @Override
@@ -383,6 +385,10 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
                     return true;
                 }
             });
+
+
+            DownloadManager manager= (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            manager.addCompletedDownload(source.getName(), source.getName(), true, "file/*", source.getPath(), source.length(),false);
             startActivity(new Intent(MainActivity.this, PreviewPptListActivity.class));
         }
 
@@ -499,7 +505,16 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         @JavascriptInterface
         public void showVideo() {
             Log.e(TAG, "showVideo: ");
-
+        }
+        @JavascriptInterface
+        public void openFile() {
+            Log.e(TAG, "openFile: ");
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    startActivity(new Intent(MainActivity.this, PreviewPptListActivity.class));
+                }
+            });
         }
 
         @JavascriptInterface
@@ -542,7 +557,17 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         @JavascriptInterface
         public void UploadFile() {
             Log.e(TAG, "UploadFile: ");
+            Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+            i.addCategory(Intent.CATEGORY_OPENABLE);
+            i.setType("file/*");
+            startActivityForResult(Intent.createChooser(i, "File Chooser"), 1);
 
+            // startActivityForResult(new Intent(MainActivity.this,OpenFileActivity.class),2);
+        }
+        @JavascriptInterface
+        public void switchCamera() {
+            Log.e(TAG, "switchCamera: ");
+            mPublisher.switchCameraFace((mPublisher.getCameraId() + 1) % Camera.getNumberOfCameras());
         }
 
         @JavascriptInterface

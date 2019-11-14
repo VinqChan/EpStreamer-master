@@ -1,23 +1,23 @@
 {
   "buildFiles": [
-    "D:\\androidProject\\EpStreamer\\library\\src\\main\\cpp\\Android.mk",
-    "D:\\androidProject\\EpStreamer\\library\\src\\main\\cpp\\Application.mk"
+    "D:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\src\\main\\cpp\\Android.mk",
+    "D:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\src\\main\\cpp\\Application.mk"
   ],
   "cleanCommands": [
-    "D:\\android\\Sdk\\ndk-bundle\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\androidProject\\EpStreamer\\library\\src\\main\\cpp\\Android.mk NDK_APPLICATION_MK\u003dD:\\androidProject\\EpStreamer\\library\\src\\main\\cpp\\Application.mk APP_ABI\u003dx86 NDK_ALL_ABIS\u003dx86 NDK_DEBUG\u003d1 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dD:/androidProject/EpStreamer/library/build/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT\u003dD:\\androidProject\\EpStreamer\\library\\build\\intermediates\\ndkBuild\\debug\\lib clean"
+    "D:\\android\\Sdk\\ndk-bundle\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\src\\main\\cpp\\Android.mk NDK_APPLICATION_MK\u003dD:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\src\\main\\cpp\\Application.mk APP_ABI\u003dx86 NDK_ALL_ABIS\u003dx86 NDK_DEBUG\u003d1 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dD:/androidProject/EpStreamer-master/EpStreamer/library/build/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT\u003dD:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\build\\intermediates\\ndkBuild\\debug\\lib clean"
   ],
   "libraries": {
     "yuv-debug-x86": {
       "artifactName": "yuv",
-      "buildCommand": "D:\\android\\Sdk\\ndk-bundle\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\androidProject\\EpStreamer\\library\\src\\main\\cpp\\Android.mk NDK_APPLICATION_MK\u003dD:\\androidProject\\EpStreamer\\library\\src\\main\\cpp\\Application.mk APP_ABI\u003dx86 NDK_ALL_ABIS\u003dx86 NDK_DEBUG\u003d1 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dD:/androidProject/EpStreamer/library/build/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT\u003dD:\\androidProject\\EpStreamer\\library\\build\\intermediates\\ndkBuild\\debug\\lib D:/androidProject/EpStreamer/library/build/intermediates/ndkBuild/debug/obj/local/x86/libyuv.so",
+      "buildCommand": "D:\\android\\Sdk\\ndk-bundle\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\src\\main\\cpp\\Android.mk NDK_APPLICATION_MK\u003dD:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\src\\main\\cpp\\Application.mk APP_ABI\u003dx86 NDK_ALL_ABIS\u003dx86 NDK_DEBUG\u003d1 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dD:/androidProject/EpStreamer-master/EpStreamer/library/build/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT\u003dD:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\build\\intermediates\\ndkBuild\\debug\\lib D:/androidProject/EpStreamer-master/EpStreamer/library/build/intermediates/ndkBuild/debug/obj/local/x86/libyuv.so",
       "abi": "x86",
-      "output": "D:\\androidProject\\EpStreamer\\library\\build\\intermediates\\ndkBuild\\debug\\obj\\local\\x86\\libyuv.so"
+      "output": "D:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\build\\intermediates\\ndkBuild\\debug\\obj\\local\\x86\\libyuv.so"
     },
     "enc-debug-x86": {
       "artifactName": "enc",
-      "buildCommand": "D:\\android\\Sdk\\ndk-bundle\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\androidProject\\EpStreamer\\library\\src\\main\\cpp\\Android.mk NDK_APPLICATION_MK\u003dD:\\androidProject\\EpStreamer\\library\\src\\main\\cpp\\Application.mk APP_ABI\u003dx86 NDK_ALL_ABIS\u003dx86 NDK_DEBUG\u003d1 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dD:/androidProject/EpStreamer/library/build/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT\u003dD:\\androidProject\\EpStreamer\\library\\build\\intermediates\\ndkBuild\\debug\\lib D:/androidProject/EpStreamer/library/build/intermediates/ndkBuild/debug/obj/local/x86/libenc.so",
+      "buildCommand": "D:\\android\\Sdk\\ndk-bundle\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\src\\main\\cpp\\Android.mk NDK_APPLICATION_MK\u003dD:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\src\\main\\cpp\\Application.mk APP_ABI\u003dx86 NDK_ALL_ABIS\u003dx86 NDK_DEBUG\u003d1 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dD:/androidProject/EpStreamer-master/EpStreamer/library/build/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT\u003dD:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\build\\intermediates\\ndkBuild\\debug\\lib D:/androidProject/EpStreamer-master/EpStreamer/library/build/intermediates/ndkBuild/debug/obj/local/x86/libenc.so",
       "abi": "x86",
-      "output": "D:\\androidProject\\EpStreamer\\library\\build\\intermediates\\ndkBuild\\debug\\obj\\local\\x86\\libenc.so"
+      "output": "D:\\androidProject\\EpStreamer-master\\EpStreamer\\library\\build\\intermediates\\ndkBuild\\debug\\obj\\local\\x86\\libenc.so"
     }
   }
 }

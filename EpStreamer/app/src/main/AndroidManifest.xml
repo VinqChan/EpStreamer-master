@@ -14,6 +14,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
 
     <application
         android:name=".MyApplication"
@@ -100,6 +101,9 @@
             android:theme="@style/Theme.UMDefault"
             />
 
+        <activity android:name="net.ossrs.yasea.demo.OpenFileActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            />
         <meta-data
             android:name="UMENG_APPKEY"
             android:value="5dc133b5570df398560000d8">

@@ -1,6 +1,8 @@
 package net.ossrs.yasea.demo;
 
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -10,6 +12,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.View;
 
 import com.blankj.utilcode.util.FileUtils;
 import com.easiio.epstreamer.R;
@@ -17,12 +20,11 @@ import com.redking.util.InitX5;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 
-import static com.easiio.epstreamer.wxapi.WXEntryActivity.TAG;
 
 public class PreviewPptListActivity extends Activity {
     private RecyclerView  pptRecycl;
+    public static final String TAG = "PreviewPptListActivity";
     private PptListAdapter adapter;
     private String FilePath = Environment.getExternalStorageDirectory().getPath() + File.separator + "epstrreamer";
     @Override
@@ -31,10 +33,17 @@ public class PreviewPptListActivity extends Activity {
         setContentView(R.layout.activity_pptlist);
         InitX5.initX5(this);
         pptRecycl = findViewById(R.id.ppt_list);
+         findViewById(R.id.back).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+               finish();
+            }
+        });
         pptRecycl.setLayoutManager(new LinearLayoutManager(this));
         pptRecycl.setItemAnimator(new DefaultItemAnimator());
         pptRecycl.addItemDecoration(new SimpleDividerItemDecoration(this));
         getFileMsg();
+        getData();
     }
     public void getFileMsg() {
         Intent intent = getIntent();
@@ -60,7 +69,10 @@ public class PreviewPptListActivity extends Activity {
                 fileName = source.getName();
                 Log.e(TAG, "getFileMsg: " + fileName);
             }
+            Log.e(TAG, "getFileMsg: "+source.length()+","+source.getPath()+","+source.getAbsolutePath() );
 
+            DownloadManager manager= (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            manager.addCompletedDownload(source.getName(), source.getName(), true, "file/*", source.getPath(), source.length(),false);
             FileUtils.copyFile(source.getPath(), FilePath + File.separator + fileName, new FileUtils.OnReplaceListener() {
 
                 @Override
@@ -69,7 +81,7 @@ public class PreviewPptListActivity extends Activity {
                     return true;
                 }
             });
-            getData();
+
         }
 
     }
