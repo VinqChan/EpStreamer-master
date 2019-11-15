@@ -30,6 +30,7 @@ import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.blankj.utilcode.constant.PermissionConstants;
@@ -89,6 +90,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
     private boolean isScale = false;
     private String nickname;
     private String headimgurl;
+    private RelativeLayout networkDisconnted;
     private IWXAPI api;
     public static ValueCallback<Uri[]> mUploadCallbackAboveFive;
 
@@ -123,6 +125,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         btnPause.setEnabled(false);
         mCameraView = (SrsCameraView) findViewById(R.id.glsurfaceview_camera);
         webview = (WebView) findViewById(R.id.webview);
+        networkDisconnted = (RelativeLayout) findViewById(R.id.network_disconnted);
 
         mPublisher = new SrsPublisher(mCameraView);
         mPublisher.setEncodeHandler(new SrsEncodeHandler(this));
@@ -837,6 +840,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
 
         boolean isConnetcted = message.isConnected;
         Log.e(TAG, "onNetWorkStateEvent: " + isConnetcted);
+        networkDisconnted.setVisibility(isConnetcted?View.GONE:View.VISIBLE);
         if (isConnetcted) {
            webview.reload();
         }
