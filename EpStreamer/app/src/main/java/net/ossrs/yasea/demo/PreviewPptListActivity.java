@@ -21,6 +21,8 @@ import com.redking.util.InitX5;
 import java.io.File;
 import java.util.ArrayList;
 
+import javax.security.auth.login.LoginException;
+
 
 public class PreviewPptListActivity extends Activity {
     private RecyclerView  pptRecycl;
@@ -63,7 +65,14 @@ public class PreviewPptListActivity extends Activity {
             String query = uri.getQuery();
 
             FileUtils.createOrExistsDir(FilePath);
-            File source = new File(path.replace("/external_files", ""));
+            if(path.contains("external_files")){
+                path = path.replace("/external_files", "");
+            }
+            if(path.contains("external")){
+                path = path.replace("/external", "/storage/emulated/0");
+            }
+            Log.e(TAG, "getFileMsg: "+path );
+            File source = new File(path);
             String fileName = "";
             if (source.exists()) {
                 fileName = source.getName();

@@ -39,6 +39,8 @@ import com.blankj.utilcode.util.SizeUtils;
 import com.blankj.utilcode.util.Utils;
 import com.easiio.epstreamer.R;
 import com.easiio.epstreamer.SharePopwindow;
+import com.easiio.epstreamer.event.NetWorkStateEvent;
+import com.easiio.epstreamer.receive.NetworkStateReceiver;
 import com.github.faucamp.simplertmp.RtmpHandler;
 import com.google.gson.Gson;
 import com.seu.magicfilter.utils.MagicFilterType;
@@ -52,6 +54,10 @@ import net.ossrs.yasea.SrsCameraView;
 import net.ossrs.yasea.SrsEncodeHandler;
 import net.ossrs.yasea.SrsPublisher;
 import net.ossrs.yasea.SrsRecordHandler;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -95,7 +101,9 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
 
+        EventBus.getDefault().register(this);
         // response screen rotation event
+        NetworkStateReceiver.register(this);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
         Utils.init(this);
         // restore data.
@@ -243,7 +251,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         //webview.loadUrl("file:///android_asset/test.html");
         webview.clearCache(true);
         webview.loadUrl("https://m.ipitch.cn/admin/index");
-        //webview.loadUrl("http://192.168.1.149:8080");
+        //webview.loadUrl("https://m.ipitch.cn/test-01");
         WebSettings webSettings = webview.getSettings();
         webSettings.setDomStorageEnabled(true);
         webSettings.setJavaScriptEnabled(true);
@@ -311,7 +319,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         Uri[] results = null;
         if (resultCode == Activity.RESULT_OK) {
             if (data != null) {
-               // String dataString = data.getStringExtra("result");
+                // String dataString = data.getStringExtra("result");
                 String dataString = data.getDataString();
                 ClipData clipData = data.getClipData();
                 if (clipData != null) {
@@ -327,13 +335,12 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
                     Log.e(TAG, "onActivityResult: dataString:" + dataString);
                     results = new Uri[]{Uri.parse(dataString)};
 
-                        mUploadCallbackAboveFive.onReceiveValue(results);
-                        mUploadCallbackAboveFive = null;
+                    mUploadCallbackAboveFive.onReceiveValue(results);
+                    mUploadCallbackAboveFive = null;
 
                 }
             }
         }
-
 
 
         super.onActivityResult(requestCode, resultCode, data);
@@ -349,7 +356,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         Intent i = new Intent(Intent.ACTION_GET_CONTENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType("file/*");
-       // i.setDataAndType(Uri.fromFile(new File(FilePath).getParentFile()), "*/*");
+        // i.setDataAndType(Uri.fromFile(new File(FilePath).getParentFile()), "*/*");
         startActivityForResult(Intent.createChooser(i, "File Chooser"), 1);
     }
 
@@ -377,7 +384,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
                 fileName = source.getName();
                 Log.e(TAG, "getFileMsg: " + fileName);
             }
-            Log.e(TAG, "getFileMsg: "+source.length()+","+source.getPath()+","+source.getAbsolutePath() );
+            Log.e(TAG, "getFileMsg: " + source.length() + "," + source.getPath() + "," + source.getAbsolutePath());
             FileUtils.copyFile(source.getPath(), FilePath + File.separator + fileName, new FileUtils.OnReplaceListener() {
 
                 @Override
@@ -387,8 +394,8 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
             });
 
 
-            DownloadManager manager= (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-            manager.addCompletedDownload(source.getName(), source.getName(), true, "file/*", source.getPath(), source.length(),false);
+            DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            manager.addCompletedDownload(source.getName(), source.getName(), true, "file/*", source.getPath(), source.length(), false);
             startActivity(new Intent(MainActivity.this, PreviewPptListActivity.class));
         }
 
@@ -472,7 +479,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
                 webview.post(new Runnable() {
                     @Override
                     public void run() {
-                        webview.loadUrl("javascript:loginWithWeChatByApp('" + responseInfo + "')");
+                        webview.loadUrl("javascript:loginWithWeChatByApp(" + responseInfo + ")");
                     }
                 });
                 //拿到信息去请求登录接口。。。
@@ -506,6 +513,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         public void showVideo() {
             Log.e(TAG, "showVideo: ");
         }
+
         @JavascriptInterface
         public void openFile() {
             Log.e(TAG, "openFile: ");
@@ -564,6 +572,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
 
             // startActivityForResult(new Intent(MainActivity.this,OpenFileActivity.class),2);
         }
+
         @JavascriptInterface
         public void switchCamera() {
             Log.e(TAG, "switchCamera: ");
@@ -823,6 +832,17 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
 
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onNetWorkStateEvent(NetWorkStateEvent message) {
+
+        boolean isConnetcted = message.isConnected;
+        Log.e(TAG, "onNetWorkStateEvent: " + isConnetcted);
+        if (isConnetcted) {
+           webview.reload();
+        }
+    }
+
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -832,6 +852,8 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        EventBus.getDefault().unregister(this);
+        NetworkStateReceiver.unregister(this);
         mPublisher.stopPublish();
         mPublisher.stopRecord();
     }
