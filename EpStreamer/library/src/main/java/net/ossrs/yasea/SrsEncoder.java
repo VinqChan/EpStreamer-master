@@ -109,9 +109,12 @@ public class SrsEncoder {
         // Unfortunately for some android phone, the output fps is less than 10 limited by the
         // capacity of poor cheap chips even with x264. So for the sake of quick appearance of
         // the first picture on the player, a spare lower GOP value is suggested. But note that
+
+
         // lower GOP will produce more I frames and therefore more streaming data flow.
         // setEncoderGop(15);
         setEncoderBitrate(vBitrate);
+
         setEncoderPreset(x264Preset);
 
         if (useSoftEncoder) {
@@ -272,6 +275,12 @@ public class SrsEncoder {
         vBitrate = 500 * 1024;  // 500 kbps
         x264Preset = "superfast";
     }
+    public void setVideo1080pMode() {
+        vBitrate = 2000 * 1024;  // 500 kbps
+        x264Preset = "superfast";
+    }
+
+
 
     public int getPreviewWidth() {
         return vPrevWidth;

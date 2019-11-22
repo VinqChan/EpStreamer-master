@@ -21,8 +21,6 @@ import com.redking.util.InitX5;
 import java.io.File;
 import java.util.ArrayList;
 
-import javax.security.auth.login.LoginException;
-
 
 public class PreviewPptListActivity extends Activity {
     private RecyclerView  pptRecycl;

@@ -6,9 +6,14 @@ import android.util.Log;
 import com.tencent.smtt.sdk.QbSdk;
 import com.tencent.smtt.sdk.TbsDownloader;
 import com.tencent.smtt.sdk.TbsListener;
-import com.umeng.socialize.Config;
+import com.twitter.sdk.android.core.Twitter;
+import com.umeng.commonsdk.UMConfigure;
 import com.umeng.socialize.PlatformConfig;
 import com.umeng.socialize.UMShareAPI;
+
+import net.ossrs.yasea.demo.MainActivity;
+
+import java.lang.reflect.Field;
 
 /**
  * Created by LiTingYao on 2018/8/11.
@@ -19,17 +24,40 @@ public class MyApplication extends Application {
         super.onCreate();
         initTBS();
         UMShareAPI.get(this);//初始化sdk
-        //开启debug模式，方便定位错误，具体错误检查方式可以查看http://dev.umeng.com/social/android/quick-integration的报错必看，正式发布，请关闭该模式
-        Config.DEBUG = true;
+        UMConfigure.setLogEnabled(true);
+        Twitter.initialize(this);
+        try {
+            Class<?> aClass = Class.forName("com.umeng.commonsdk.UMConfigure");
+            Field[] fs = aClass.getDeclaredFields();
+            for (Field f:fs){
+                Log.e("xxxxxx","ff="+f.getName()+"   "+f.getType().getName());
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        UMConfigure.init(this,"5dc133b5570df398560000d8"
+                ,"umeng", UMConfigure.DEVICE_TYPE_PHONE,"");
+        platform();
     }
+    public void platform()
     //各个平台的配置
     {
         //微信
         PlatformConfig.setWeixin("wx4a61892ca982411b", "d219ed7e511c53ca025d4f3800e84b45");
-        //新浪微博(第三个参数为回调地址)
-        PlatformConfig.setSinaWeibo("3921700954", "04b48b094faeb16683c32669824ebdad","http://sns.whalecloud.com/sina2/callback");
         //QQ
-        PlatformConfig.setQQZone("100424468", "c7394704798a158208a74ab60104f0ba");
+        PlatformConfig.setQQZone("101830528", "c7394704798a158208a74ab60104f0ba");
+
+        PlatformConfig.setTwitter("jFRczHoA7jym7X9DYOG6IMQab", "X3hYoUjklg5c3QpLi6MPx487nmGSGjlMm77kTAWMeRJPt9Xmlu");
+
+        PlatformConfig.setSinaWeibo("3921700954", "04b48b094faeb16683c32669824ebdad", "http://sns.whalecloud.com");
+        PlatformConfig.setYixin("yxc0614e80c9304c11b0391514d09f13bf");
+        PlatformConfig.setAlipay("2015111700822536");
+        PlatformConfig.setLaiwang("laiwangd497e70d4", "d497e70d4c3e4efeab1381476bac4c5e");
+        PlatformConfig.setPinterest("1439206");
+        PlatformConfig.setKakao("e4f60e065048eb031e235c806b31c70f");
+        PlatformConfig.setDing("dingoalmlnohc0wggfedpk");
+        PlatformConfig.setVKontakte("5764965", "5My6SNliAaLxEm3Lyd9J");
+        PlatformConfig.setDropbox("oz8v5apet3arcdy", "h7p2pjbzkkxt02a");
     }
     private void initTBS() {
         

@@ -2,7 +2,6 @@ package com.easiio.epstreamer;
 
 import android.app.Activity;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.ColorDrawable;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +17,9 @@ public class SharePopwindow {
     public static Activity mActivity;
     public static View qqShare;
     public static View weixinShare;
+    public static View facebookShare;
+    public static View linkedInShare;
+    public static View twitterShare;
     public static View cancel;
     public static String url;
     public static String title;
@@ -32,6 +34,9 @@ public class SharePopwindow {
         mActivity = activity;
         qqShare = contentView.findViewById(R.id.qq);
         weixinShare = contentView.findViewById(R.id.weixin);
+        facebookShare = contentView.findViewById(R.id.facebook);
+        linkedInShare = contentView.findViewById(R.id.linkedIn);
+        twitterShare = contentView.findViewById(R.id.twitter);
         cancel = contentView.findViewById(R.id.cancel_tv);
         popupWindow = new PopupWindow(contentView,
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -66,8 +71,35 @@ public class SharePopwindow {
             public void onClick(View view) {
                 ShareUtils.shareWeb(activity, url, title
                         , Defaultcontent.text, Defaultcontent.imageurl, R.mipmap.ep_launcher, SHARE_MEDIA.WEIXIN
-
                 );
+                popupWindow.dismiss();
+            }
+        });
+
+        facebookShare.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+//                ShareLinkContent content = new ShareLinkContent.Builder()
+//                        .setContentUrl(Uri.parse(url))
+//                        .build();
+//                ShareDialog.show(activity, content);
+                ShareUtils.shareWeb(activity, url, title
+                        , Defaultcontent.text, Defaultcontent.imageurl, R.mipmap.ep_launcher, SHARE_MEDIA.FACEBOOK
+                );
+                popupWindow.dismiss();
+            }
+        });
+
+        linkedInShare.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                popupWindow.dismiss();
+            }
+        });
+
+        twitterShare.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
                 popupWindow.dismiss();
             }
         });

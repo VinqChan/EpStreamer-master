@@ -287,7 +287,9 @@ public class SrsPublisher {
     public void setVideoSmoothMode() {
         mEncoder.setVideoSmoothMode();
     }
-
+    public void setVideo1080pMode() {
+        mEncoder.setVideo1080pMode();
+    }
     public void setSendVideoOnly(boolean flag) {
         if (mic != null) {
             if (flag) {

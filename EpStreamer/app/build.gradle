@@ -18,12 +18,30 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
     }
     lintOptions {
         checkReleaseBuilds false
         // Or, if you prefer, you can continue to check for errors in release builds,
         // but continue the build even when errors are found:
         abortOnError false
+    }
+    signingConfigs {
+        debug {
+            keyAlias 'easiio'
+            keyPassword 'easiio123'
+            storeFile file('epstreamer.jks')
+            storePassword 'easiio123'
+        }
+        release {
+            keyAlias 'easiio'
+            keyPassword 'easiio123'
+            storeFile file('epstreamer.jks')
+            storePassword 'easiio123'
+        }
     }
 }
 
@@ -37,14 +55,19 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.4.1'
     implementation 'com.android.support:recyclerview-v7:27.1.1'
     implementation 'com.lzy.net:okgo:+'
-    implementation files('libs/SocialSDK_QQ_Simplify.jar')
-    implementation files('libs/SocialSDK_Sina_Simplify.jar')
-    implementation files('libs/SocialSDK_WeChat_Simplify.jar')
-    implementation files('libs/umeng_social_api.jar')
-    implementation files('libs/umeng_social_net.jar')
-    implementation files('libs/umeng_social_shareview.jar')
-    implementation files('libs/umeng_social_tool.jar')
     implementation 'com.redking.x5:app:+'
     implementation 'com.google.code.gson:gson:2.8.2'
     implementation 'org.greenrobot:eventbus:3.1.1'
+    implementation files('libs/umeng-common-2.1.0.jar')
+    implementation files('libs/umeng-share-core-6.9.6.jar')
+    implementation files('libs/umeng-share-facebook-6.9.6.jar')
+    implementation files('libs/umeng-share-linkedin-6.9.6.jar')
+    implementation files('libs/umeng-share-QQ-simplify-6.9.6.jar')
+    implementation files('libs/umeng-share-twitter-6.9.6.jar')
+    implementation files('libs/umeng-share-wechat-simplify-6.9.6.jar')
+    implementation files('libs/umeng-sharetool-6.9.6.jar')
+    implementation files('libs/volley.jar')
+    implementation files('libs/umeng-shareboard-widget-6.9.6.jar')
+    implementation 'com.twitter.sdk.android:twitter-core:3.1.1'
+    implementation 'com.twitter.sdk.android:tweet-composer:3.1.1'
 }

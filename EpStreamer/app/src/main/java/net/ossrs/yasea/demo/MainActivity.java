@@ -39,7 +39,6 @@ import com.blankj.utilcode.util.PermissionUtils;
 import com.blankj.utilcode.util.SizeUtils;
 import com.blankj.utilcode.util.Utils;
 import com.easiio.epstreamer.R;
-import com.easiio.epstreamer.SharePopwindow;
 import com.easiio.epstreamer.event.NetWorkStateEvent;
 import com.easiio.epstreamer.receive.NetworkStateReceiver;
 import com.github.faucamp.simplertmp.RtmpHandler;
@@ -47,9 +46,15 @@ import com.google.gson.Gson;
 import com.seu.magicfilter.utils.MagicFilterType;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
+import com.twitter.sdk.android.core.Twitter;
+import com.twitter.sdk.android.tweetcomposer.TweetComposer;
+import com.umeng.socialize.ShareAction;
 import com.umeng.socialize.UMAuthListener;
 import com.umeng.socialize.UMShareAPI;
+import com.umeng.socialize.UMShareListener;
 import com.umeng.socialize.bean.SHARE_MEDIA;
+import com.umeng.socialize.media.UMImage;
+import com.umeng.socialize.media.UMWeb;
 
 import net.ossrs.yasea.SrsCameraView;
 import net.ossrs.yasea.SrsEncodeHandler;
@@ -62,7 +67,9 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.SocketException;
+import java.net.URL;
 import java.util.Map;
 import java.util.Random;
 
@@ -298,7 +305,6 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
                                      public void onPageFinished(WebView view, String url) {
                                          super.onPageFinished(view, url);
                                          Log.e(TAG, "onPageFinished: " + url);
-
                                      }
 
                                      @Override
@@ -312,10 +318,22 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         regToWx();
         //getFileMsg();
         //openFile();
+
+//        new Thread(
+//
+//                new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        //HttpUtil.postLinkedin();
+//                        HttpUtil.getAuthorization();
+//                    }
+//                }
+//        ).start();
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        UMShareAPI.get(this).onActivityResult(requestCode, resultCode, data);
         if (null == mUploadCallbackAboveFive) {
             return;
         }
@@ -539,6 +557,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
 //                req.scope = "snsapi_userinfo";
 //                req.state = "wechat_sdk_demo_test";
 //                api.sendReq(req);
+
             }
         }
 
@@ -548,6 +567,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
             if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             }
+            mPublisher.setOutputResolution(1280, 720);//w =1380，h=1050
         }
 
         @JavascriptInterface
@@ -583,9 +603,48 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         }
 
         @JavascriptInterface
-        public void SharePitch(String url, String title) {
+        public void SharePitch(final String url, final String title) {
             Log.e(TAG, "SharePitch: " + url + "," + title);
-            SharePopwindow.showPopupWindow(MainActivity.this, url, title);
+           // SharePopwindow.showPopupWindow(MainActivity.this, url, title);
+
+            final UMImage image = new UMImage(MainActivity.this, R.mipmap.ep_launcher);//资源文件
+            final UMWeb web = new UMWeb(url);
+            web.setTitle(title);//标题
+           // web.setThumb(image);  //缩略图
+            web.setDescription("");//描述
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                   // boolean isAuthorize = UMShareAPI.get(MainActivity.this).isAuthorize(MainActivity.this,SHARE_MEDIA.TWITTER);
+                   // Log.e(TAG, "isAuthorize: "+isAuthorize );
+
+                    new ShareAction(MainActivity.this).withMedia(web).setDisplayList(SHARE_MEDIA.QQ,SHARE_MEDIA.WEIXIN,SHARE_MEDIA.FACEBOOK,SHARE_MEDIA.TWITTER)
+                            .setCallback(new UMShareListener() {
+                                @Override
+                                public void onStart(SHARE_MEDIA share_media) {
+                                    if (share_media.equals(SHARE_MEDIA.TWITTER)) {
+                                        shareToTwitter(url, title);
+                                    }
+                                }
+
+                                @Override
+                                public void onResult(SHARE_MEDIA share_media) {
+
+                                }
+
+                                @Override
+                                public void onError(SHARE_MEDIA share_media, Throwable throwable) {
+                                    Log.e(TAG, "onError: "+throwable.getMessage() );
+                                }
+
+                                @Override
+                                public void onCancel(SHARE_MEDIA share_media) {
+
+                                }
+                            }).open();
+                }
+            });
+
         }
 
         @JavascriptInterface
@@ -594,14 +653,33 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
             switch (resolution) {
                 case "VGA":
                     mPublisher.setOutputResolution(640, 480);//w =1380，h=1050
+                    mPublisher.setVideoSmoothMode();
                     break;
-                case "720p":
+                case "720P":
                     mPublisher.setOutputResolution(1280, 720);//w =1380，h=1050
+                    mPublisher.setVideoHDMode();
                     break;
-                case "1080p":
+                case "1080P":
                     mPublisher.setOutputResolution(1920, 1080);//w =1380，h=1050
+                    mPublisher.setVideo1080pMode();
                     break;
             }
+        }
+    }
+    /**
+     * 分享到twitter
+     * 若未安装twitter客户端，则会跳转到浏览器
+     *
+     */
+    public void shareToTwitter(String url,String text) {
+        //这里分享一个链接，更多分享配置参考官方介绍：https://dev.twitter.com/twitterkit/android/compose-tweets
+        try {
+            TweetComposer.Builder builder = new TweetComposer.Builder(MainActivity.this)
+                    .text(text)
+                    .url(new URL(url));
+            builder.show();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
         }
     }
 
