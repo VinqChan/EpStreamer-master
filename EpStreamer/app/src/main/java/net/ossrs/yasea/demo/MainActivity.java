@@ -14,14 +14,17 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.JsResult;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -29,20 +32,38 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.blankj.utilcode.constant.PermissionConstants;
 import com.blankj.utilcode.util.FileUtils;
 import com.blankj.utilcode.util.PermissionUtils;
 import com.blankj.utilcode.util.SizeUtils;
+import com.blankj.utilcode.util.StringUtils;
+import com.blankj.utilcode.util.ToastUtils;
 import com.blankj.utilcode.util.Utils;
 import com.easiio.epstreamer.R;
 import com.easiio.epstreamer.event.NetWorkStateEvent;
+import com.easiio.epstreamer.oss.OssService;
+import com.easiio.epstreamer.oss.UIDisplayer;
 import com.easiio.epstreamer.receive.NetworkStateReceiver;
 import com.github.faucamp.simplertmp.RtmpHandler;
 import com.google.gson.Gson;
+import com.jph.takephoto.app.TakePhoto;
+import com.jph.takephoto.app.TakePhotoImpl;
+import com.jph.takephoto.compress.CompressConfig;
+import com.jph.takephoto.model.CropOptions;
+import com.jph.takephoto.model.InvokeParam;
+import com.jph.takephoto.model.TContextWrap;
+import com.jph.takephoto.model.TResult;
+import com.jph.takephoto.model.TakePhotoOptions;
+import com.jph.takephoto.permission.InvokeListener;
+import com.jph.takephoto.permission.PermissionManager;
+import com.jph.takephoto.permission.TakePhotoInvocationHandler;
 import com.seu.magicfilter.utils.MagicFilterType;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
@@ -75,7 +96,7 @@ import java.util.Random;
 
 
 public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
-        SrsRecordHandler.SrsRecordListener, SrsEncodeHandler.SrsEncodeListener {
+        SrsRecordHandler.SrsRecordListener, SrsEncodeHandler.SrsEncodeListener , TakePhoto.TakeResultListener, InvokeListener {
 
     private static final String TAG = "EpStream";
     public static final String APP_ID = "wx4a61892ca982411b";
@@ -100,7 +121,11 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
     private RelativeLayout networkDisconnted;
     private IWXAPI api;
     public static ValueCallback<Uri[]> mUploadCallbackAboveFive;
-
+    private FrameLayout flVideoContainer;
+    private String url ;
+    private InvokeParam invokeParam;
+    private TakePhoto takePhoto;
+    private String strUuid;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -127,6 +152,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         btnSwitchCamera = (Button) findViewById(R.id.swCam);
         btnRecord = (Button) findViewById(R.id.record);
         btnSwitchEncoder = (Button) findViewById(R.id.swEnc);
+        flVideoContainer = (FrameLayout) findViewById(R.id.flVideoContainer);
         btnPause = (Button) findViewById(R.id.pause);
         backiv = (ImageView) findViewById(R.id.back);
         btnPause.setEnabled(false);
@@ -141,8 +167,18 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         mPublisher.setPreviewResolution(1280, 720);
         mPublisher.setOutputResolution(1280, 720);//w =1380，h=1050
         mPublisher.setVideoHDMode();
-        mPublisher.startCamera();
+        //mPublisher.startCamera();
 
+        Intent i_getvalue = getIntent();
+        String action = i_getvalue.getAction();
+
+        if(Intent.ACTION_VIEW.equals(action)){
+            Uri uri = i_getvalue.getData();
+            if(uri != null){
+                url = uri.getQueryParameter("url");
+                Log.e(TAG, "onCreate: "+url );
+            }
+        }
 
         PermissionUtils.permission(PermissionConstants.CAMERA, PermissionConstants.MICROPHONE).callback(new PermissionUtils.SimpleCallback() {
             @Override
@@ -182,6 +218,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
             public void onClick(View v) {
                 Log.e(TAG, "onClick: ");
                 if (btnPublish.getText().toString().contentEquals("publish")) {
+                    mPublisher.startCamera();
                     rtmpUrl = efu.getText().toString();
                     SharedPreferences.Editor editor = sp.edit();
                     editor.putString("rtmpUrl", rtmpUrl);
@@ -260,7 +297,12 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         //mCameraView.setVisibility(View.GONE);
         //webview.loadUrl("file:///android_asset/test.html");
         webview.clearCache(true);
-        webview.loadUrl("https://m.ipitch.cn/admin/index");
+        if(StringUtils.isEmpty(url)){
+            webview.loadUrl("https://m.ipitch.cn/admin/index");
+        }else {
+            webview.loadUrl(url);
+        }
+
         //webview.loadUrl("https://m.ipitch.cn/test-01");
         WebSettings webSettings = webview.getSettings();
         webSettings.setDomStorageEnabled(true);
@@ -273,7 +315,30 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         webSettings.setBlockNetworkImage(false);
         webSettings.setAllowFileAccess(true);
         webview.addJavascriptInterface(new JsInteration(), "android");
+        //自适应屏幕
+        webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN);
+        webSettings.setLoadWithOverviewMode(true);
+
         webview.setWebChromeClient(new WebChromeClient() {
+
+            @Override
+            public void onShowCustomView(View view, CustomViewCallback callback) {
+                webview.setVisibility(View.GONE);
+                flVideoContainer.setVisibility(View.VISIBLE);
+                flVideoContainer.addView(view);
+                super.onShowCustomView(view, callback);
+                Log.e(TAG, "onShowCustomView: " );
+            }
+
+            @Override
+            public void onHideCustomView() {
+                webview.setVisibility(View.VISIBLE);
+                flVideoContainer.setVisibility(View.GONE);
+                flVideoContainer.removeAllViews();
+                super.onHideCustomView();
+                Log.e(TAG, "onHideCustomView: " );
+            }
+
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
                 mUploadCallbackAboveFive = filePathCallback;
@@ -316,6 +381,8 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
                                  }
         );
         regToWx();
+        configCompress(getTakePhoto());
+        configTakePhotoOption(getTakePhoto());
         //getFileMsg();
         //openFile();
 
@@ -333,6 +400,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        getTakePhoto().onActivityResult(requestCode, resultCode, data);
         UMShareAPI.get(this).onActivityResult(requestCode, resultCode, data);
         if (null == mUploadCallbackAboveFive) {
             return;
@@ -518,6 +586,122 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         });
     }
 
+    /**
+     *  获取TakePhoto实例
+     * @return
+     */
+    public TakePhoto getTakePhoto(){
+        if (takePhoto==null){
+            takePhoto= (TakePhoto) TakePhotoInvocationHandler.of(this).bind(new TakePhotoImpl(this,this));
+        }
+        return takePhoto;
+    }
+    @Override
+    public void takeSuccess(TResult result) {
+        Log.i(TAG,"takeSuccess：" + result.getImage().getCompressPath() +", "+result.getImage().getOriginalPath()+","+strUuid);
+        final File file = new File(TextUtils.isEmpty(result.getImage().getCompressPath())?result.getImage().getOriginalPath():result.getImage().getCompressPath());
+        final String fileName = file.getName();
+        View  view = LayoutInflater.from(MainActivity.this).inflate(R.layout.activity_upload_image,null);
+        final ImageView imageView = (ImageView)view. findViewById(R.id.imageView);
+        ProgressBar bar = (ProgressBar) view. findViewById(R.id.bar);
+        TextView textView = (TextView) view. findViewById(R.id.output_info);
+
+        final UIDisplayer mUIDisplayer = new UIDisplayer(imageView, bar, textView, this);
+        new Thread( new Runnable() {
+            @Override
+            public void run() {
+                OssService.initOSS(MainActivity.this,mUIDisplayer).asyncPutFile("epnew" + File.separator +strUuid+File.separator+ fileName, file.getPath(), new OssService.IuploadFileCall() {
+                    @Override
+                    public void success(String url) {
+
+                        String imagesUrl = "http://easiio-pitch.oss-cn-hangzhou.aliyuncs.com/epnew/" +strUuid+File.separator+ fileName;
+                        Log.d(TAG, "success: " + imagesUrl);
+//                        runOnUiThread(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                ToastUtils.showLong("上传成功！");
+//                            }
+//                        });
+
+                        PitchImageModel model = new PitchImageModel();
+                        model.setUuid(strUuid);
+                        model.setFileurl(imagesUrl);
+                        model.setStorage_type("oss");
+
+
+                        final String responseInfo = new Gson().toJson(model);
+                        Log.e(TAG, "responseInfo: " + responseInfo);
+                        webview.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                webview.loadUrl("javascript:uploadImageInfo("+responseInfo+")");
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void faile(String url) {
+
+                        ToastUtils.showShort("上传失败！");
+                    }
+                });
+
+            }
+        }).start();
+
+    }
+    @Override
+    public void takeFail(TResult result,String msg) {
+        Log.i(TAG, "takeFail:" + msg);
+    }
+    @Override
+    public void takeCancel() {
+        Log.i(TAG, getResources().getString(R.string.msg_operation_canceled));
+    }
+    @Override
+    public PermissionManager.TPermissionType invoke(InvokeParam invokeParam) {
+        PermissionManager.TPermissionType type=PermissionManager.checkPermission(TContextWrap.of(this),invokeParam.getMethod());
+        if(PermissionManager.TPermissionType.WAIT.equals(type)){
+            this.invokeParam=invokeParam;
+        }
+        return type;
+    }
+    private void configTakePhotoOption(TakePhoto takePhoto) {
+        TakePhotoOptions.Builder builder = new TakePhotoOptions.Builder();
+        builder.setWithOwnGallery(false);
+        builder.setCorrectImage(false);
+        takePhoto.setTakePhotoOptions(builder.create());
+
+    }
+
+    private void configCompress(TakePhoto takePhoto) {
+
+        int maxSize = 102400;
+        int width = 1280;
+        int height = 720;
+
+        boolean enableRawFile = true;
+        CompressConfig config;
+        config = new CompressConfig.Builder().setMaxSize(maxSize)
+                .setMaxPixel(width >= height ? width : height)
+                .enableReserveRaw(enableRawFile)
+                .create();
+
+        takePhoto.onEnableCompress(config, false);
+
+
+    }
+
+    private CropOptions getCropOptions() {
+        int height =800;
+        int width = 800;
+        boolean withWonCrop = true;
+
+        CropOptions.Builder builder = new CropOptions.Builder();
+        builder.setAspectX(width).setAspectY(height);
+        builder.setWithOwnCrop(withWonCrop);
+        return builder.create();
+    }
     public class JsInteration {
 
         @JavascriptInterface
@@ -529,7 +713,19 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
             }
             return url;
         }
-
+        @JavascriptInterface
+        public String setUuid(String uuid) {
+            Log.e(TAG, "setUuid: " + uuid);
+            strUuid = uuid;
+            File file = new File(Environment.getExternalStorageDirectory(), "/temp/" + System.currentTimeMillis() + ".jpg");
+            if (!file.getParentFile().exists()) {
+                file.getParentFile().mkdirs();
+            }
+            configCompress(getTakePhoto());
+            final Uri imageUri = Uri.fromFile(file);
+            getTakePhoto().onPickFromCapture(imageUri);
+            return uuid;
+        }
         @JavascriptInterface
         public void showVideo() {
             Log.e(TAG, "showVideo: ");
@@ -564,16 +760,17 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         @JavascriptInterface
         public void exit() {
             Log.e(TAG, "exit: ");
+            MainActivity.this.stopStream();
             if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             }
             mPublisher.setOutputResolution(1280, 720);//w =1380，h=1050
+            mPublisher.stopCamera();
         }
 
         @JavascriptInterface
         public void startStream() {
             Log.e(TAG, "startStream: ");
-
 
             MainActivity.this.startStream();
 
@@ -733,7 +930,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         Log.e(TAG, "dispatchKeyEvent: " + event.getKeyCode());
 
         //拦截返回键
-        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK || (event.getKeyCode() == 87)) { //右翻页
+        if ( (event.getKeyCode() == 87)) { //右翻页
             //判断触摸UP事件才会进行返回事件处理
 //            if (event.getAction() == KeyEvent.ACTION_UP) {
 //                onBackPressed();
@@ -790,6 +987,11 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
 //            return true;
 //        }
         return super.dispatchKeyEvent(event);
+    }
+
+    @Override
+    public void onPointerCaptureChanged(boolean hasCapture) {
+
     }
 
     @Override
@@ -884,6 +1086,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
     @Override
     protected void onResume() {
         super.onResume();
+
         final Button btn = (Button) findViewById(R.id.publish);
         btn.setEnabled(true);
         mPublisher.resumeRecord();

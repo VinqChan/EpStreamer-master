@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.PopupWindow;
 
+import com.easiio.epstreamer.util.ShareUtils;
 import com.umeng.socialize.bean.SHARE_MEDIA;
 
 public class SharePopwindow {

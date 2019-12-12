@@ -109,4 +109,9 @@
             android:textColor="@android:color/secondary_text_dark"
             />
     </RelativeLayout>
+    <FrameLayout
+        android:id="@+id/flVideoContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    </FrameLayout>
 </RelativeLayout>

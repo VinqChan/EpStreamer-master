@@ -273,10 +273,10 @@ public class SrsEncoder {
 
     public void setVideoSmoothMode() {
         vBitrate = 500 * 1024;  // 500 kbps
-        x264Preset = "superfast";
+        x264Preset = "faster";
     }
     public void setVideo1080pMode() {
-        vBitrate = 2000 * 1024;  // 500 kbps
+        vBitrate = 3000 * 1024;  // 2000 kbps
         x264Preset = "superfast";
     }
 
