@@ -42,6 +42,7 @@ import android.widget.Toast;
 import com.blankj.utilcode.constant.PermissionConstants;
 import com.blankj.utilcode.util.FileUtils;
 import com.blankj.utilcode.util.PermissionUtils;
+import com.blankj.utilcode.util.SPUtils;
 import com.blankj.utilcode.util.SizeUtils;
 import com.blankj.utilcode.util.StringUtils;
 import com.blankj.utilcode.util.ToastUtils;
@@ -51,6 +52,7 @@ import com.easiio.epstreamer.event.NetWorkStateEvent;
 import com.easiio.epstreamer.oss.OssService;
 import com.easiio.epstreamer.oss.UIDisplayer;
 import com.easiio.epstreamer.receive.NetworkStateReceiver;
+import com.easiio.epstreamer.util.DownloadUtil;
 import com.github.faucamp.simplertmp.RtmpHandler;
 import com.google.gson.Gson;
 import com.jph.takephoto.app.TakePhoto;
@@ -96,7 +98,7 @@ import java.util.Random;
 
 
 public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
-        SrsRecordHandler.SrsRecordListener, SrsEncodeHandler.SrsEncodeListener , TakePhoto.TakeResultListener, InvokeListener {
+        SrsRecordHandler.SrsRecordListener, SrsEncodeHandler.SrsEncodeListener, TakePhoto.TakeResultListener, InvokeListener {
 
     private static final String TAG = "EpStream";
     public static final String APP_ID = "wx4a61892ca982411b";
@@ -122,10 +124,13 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
     private IWXAPI api;
     public static ValueCallback<Uri[]> mUploadCallbackAboveFive;
     private FrameLayout flVideoContainer;
-    private String url ;
+    private String url;
     private InvokeParam invokeParam;
     private TakePhoto takePhoto;
     private String strUuid;
+    private TextView progressTv;
+    private boolean isDownload = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -159,6 +164,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         mCameraView = (SrsCameraView) findViewById(R.id.glsurfaceview_camera);
         webview = (WebView) findViewById(R.id.webview);
         networkDisconnted = (RelativeLayout) findViewById(R.id.network_disconnted);
+        progressTv = (TextView) findViewById(R.id.progress_tv);
 
         mPublisher = new SrsPublisher(mCameraView);
         mPublisher.setEncodeHandler(new SrsEncodeHandler(this));
@@ -172,11 +178,11 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         Intent i_getvalue = getIntent();
         String action = i_getvalue.getAction();
 
-        if(Intent.ACTION_VIEW.equals(action)){
+        if (Intent.ACTION_VIEW.equals(action)) {
             Uri uri = i_getvalue.getData();
-            if(uri != null){
+            if (uri != null) {
                 url = uri.getQueryParameter("url");
-                Log.e(TAG, "onCreate: "+url );
+                Log.e(TAG, "onCreate: " + url);
             }
         }
 
@@ -297,9 +303,13 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         //mCameraView.setVisibility(View.GONE);
         //webview.loadUrl("file:///android_asset/test.html");
         webview.clearCache(true);
-        if(StringUtils.isEmpty(url)){
-            webview.loadUrl("https://m.ipitch.cn/admin/index");
-        }else {
+        if (StringUtils.isEmpty(url)) {
+            if(SPUtils.getInstance().getBoolean("language", false)){
+                webview.loadUrl("https://m.ipitch.us/admin/index");
+            }else {
+                webview.loadUrl("https://m.ipitch.cn/admin/index");
+            }
+        } else {
             webview.loadUrl(url);
         }
 
@@ -327,7 +337,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
                 flVideoContainer.setVisibility(View.VISIBLE);
                 flVideoContainer.addView(view);
                 super.onShowCustomView(view, callback);
-                Log.e(TAG, "onShowCustomView: " );
+                Log.e(TAG, "onShowCustomView: ");
             }
 
             @Override
@@ -336,7 +346,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
                 flVideoContainer.setVisibility(View.GONE);
                 flVideoContainer.removeAllViews();
                 super.onHideCustomView();
-                Log.e(TAG, "onHideCustomView: " );
+                Log.e(TAG, "onHideCustomView: ");
             }
 
             @Override
@@ -587,34 +597,36 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
     }
 
     /**
-     *  获取TakePhoto实例
+     * 获取TakePhoto实例
+     *
      * @return
      */
-    public TakePhoto getTakePhoto(){
-        if (takePhoto==null){
-            takePhoto= (TakePhoto) TakePhotoInvocationHandler.of(this).bind(new TakePhotoImpl(this,this));
+    public TakePhoto getTakePhoto() {
+        if (takePhoto == null) {
+            takePhoto = (TakePhoto) TakePhotoInvocationHandler.of(this).bind(new TakePhotoImpl(this, this));
         }
         return takePhoto;
     }
+
     @Override
     public void takeSuccess(TResult result) {
-        Log.i(TAG,"takeSuccess：" + result.getImage().getCompressPath() +", "+result.getImage().getOriginalPath()+","+strUuid);
-        final File file = new File(TextUtils.isEmpty(result.getImage().getCompressPath())?result.getImage().getOriginalPath():result.getImage().getCompressPath());
+        Log.i(TAG, "takeSuccess：" + result.getImage().getCompressPath() + ", " + result.getImage().getOriginalPath() + "," + strUuid);
+        final File file = new File(TextUtils.isEmpty(result.getImage().getCompressPath()) ? result.getImage().getOriginalPath() : result.getImage().getCompressPath());
         final String fileName = file.getName();
-        View  view = LayoutInflater.from(MainActivity.this).inflate(R.layout.activity_upload_image,null);
-        final ImageView imageView = (ImageView)view. findViewById(R.id.imageView);
-        ProgressBar bar = (ProgressBar) view. findViewById(R.id.bar);
-        TextView textView = (TextView) view. findViewById(R.id.output_info);
+        View view = LayoutInflater.from(MainActivity.this).inflate(R.layout.activity_upload_image, null);
+        final ImageView imageView = (ImageView) view.findViewById(R.id.imageView);
+        ProgressBar bar = (ProgressBar) view.findViewById(R.id.bar);
+        TextView textView = (TextView) view.findViewById(R.id.output_info);
 
         final UIDisplayer mUIDisplayer = new UIDisplayer(imageView, bar, textView, this);
-        new Thread( new Runnable() {
+        new Thread(new Runnable() {
             @Override
             public void run() {
-                OssService.initOSS(MainActivity.this,mUIDisplayer).asyncPutFile("epnew" + File.separator +strUuid+File.separator+ fileName, file.getPath(), new OssService.IuploadFileCall() {
+                OssService.initOSS(MainActivity.this, mUIDisplayer).asyncPutFile("epnew" + File.separator + strUuid + File.separator + fileName, file.getPath(), new OssService.IuploadFileCall() {
                     @Override
                     public void success(String url) {
 
-                        String imagesUrl = "http://easiio-pitch.oss-cn-hangzhou.aliyuncs.com/epnew/" +strUuid+File.separator+ fileName;
+                        String imagesUrl = "http://easiio-pitch.oss-cn-hangzhou.aliyuncs.com/epnew/" + strUuid + File.separator + fileName;
                         Log.d(TAG, "success: " + imagesUrl);
 //                        runOnUiThread(new Runnable() {
 //                            @Override
@@ -622,6 +634,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
 //                                ToastUtils.showLong("上传成功！");
 //                            }
 //                        });
+
 
                         PitchImageModel model = new PitchImageModel();
                         model.setUuid(strUuid);
@@ -634,7 +647,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
                         webview.post(new Runnable() {
                             @Override
                             public void run() {
-                                webview.loadUrl("javascript:uploadImageInfo("+responseInfo+")");
+                                webview.loadUrl("javascript:uploadImageInfo(" + responseInfo + ")");
                             }
                         });
                     }
@@ -650,22 +663,26 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         }).start();
 
     }
+
     @Override
-    public void takeFail(TResult result,String msg) {
+    public void takeFail(TResult result, String msg) {
         Log.i(TAG, "takeFail:" + msg);
     }
+
     @Override
     public void takeCancel() {
         Log.i(TAG, getResources().getString(R.string.msg_operation_canceled));
     }
+
     @Override
     public PermissionManager.TPermissionType invoke(InvokeParam invokeParam) {
-        PermissionManager.TPermissionType type=PermissionManager.checkPermission(TContextWrap.of(this),invokeParam.getMethod());
-        if(PermissionManager.TPermissionType.WAIT.equals(type)){
-            this.invokeParam=invokeParam;
+        PermissionManager.TPermissionType type = PermissionManager.checkPermission(TContextWrap.of(this), invokeParam.getMethod());
+        if (PermissionManager.TPermissionType.WAIT.equals(type)) {
+            this.invokeParam = invokeParam;
         }
         return type;
     }
+
     private void configTakePhotoOption(TakePhoto takePhoto) {
         TakePhotoOptions.Builder builder = new TakePhotoOptions.Builder();
         builder.setWithOwnGallery(false);
@@ -693,7 +710,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
     }
 
     private CropOptions getCropOptions() {
-        int height =800;
+        int height = 800;
         int width = 800;
         boolean withWonCrop = true;
 
@@ -702,6 +719,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         builder.setWithOwnCrop(withWonCrop);
         return builder.create();
     }
+
     public class JsInteration {
 
         @JavascriptInterface
@@ -713,6 +731,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
             }
             return url;
         }
+
         @JavascriptInterface
         public String setUuid(String uuid) {
             Log.e(TAG, "setUuid: " + uuid);
@@ -726,9 +745,15 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
             getTakePhoto().onPickFromCapture(imageUri);
             return uuid;
         }
+
         @JavascriptInterface
         public void showVideo() {
             Log.e(TAG, "showVideo: ");
+        }
+        @JavascriptInterface
+        public void setLanguage(String language) {
+            Log.e(TAG, "setLanguage: "+language);
+            SPUtils.getInstance().put("language",language.equals("US")?true:false);
         }
 
         @JavascriptInterface
@@ -783,6 +808,66 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         }
 
         @JavascriptInterface
+        public void downloadVideo(String url) {
+            Log.e(TAG, "downloadVideo: " + url);
+
+            if(isDownload){
+                Toast.makeText(MainActivity.this, "文件正在下载中，稍后再试！", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    progressTv.setText("0%");
+                    progressTv.setVisibility(View.VISIBLE);
+                }
+            });
+
+            final String fileName = System.currentTimeMillis()+".mp4";
+            DownloadUtil.get().download(MainActivity.this, url, Environment.getExternalStorageDirectory().getPath(), fileName, new DownloadUtil.OnDownloadListener() {
+                @Override
+                public void onDownloadSuccess() {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this, "下载成功！请到相册中查看", Toast.LENGTH_SHORT).show();
+                            // 这里的弹框设置了进度条，下同
+
+
+                            if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+                                return;
+                            }
+                            progressTv.setVisibility(View.GONE);
+                            File file = new File(Environment.getExternalStorageDirectory().getPath() + "/download/" + fileName);
+                            Log.w(TAG, "path：" + file);
+                            isDownload = false;
+                        }
+                    });
+                }
+
+                @Override
+                public void onDownloading(int progress) {
+                    isDownload = true;
+                    Log.e(TAG, "onDownloading: " + progress);
+                    progressTv.setText(progress+"%");
+                }
+
+                @Override
+                public void onDownloadFailed() {
+                    isDownload = false;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this, "下载失败", Toast.LENGTH_SHORT).show();
+
+                        }
+                    });
+                }
+            });
+
+        }
+
+        @JavascriptInterface
         public void UploadFile() {
             Log.e(TAG, "UploadFile: ");
             Intent i = new Intent(Intent.ACTION_GET_CONTENT);
@@ -802,20 +887,20 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         @JavascriptInterface
         public void SharePitch(final String url, final String title) {
             Log.e(TAG, "SharePitch: " + url + "," + title);
-           // SharePopwindow.showPopupWindow(MainActivity.this, url, title);
+            // SharePopwindow.showPopupWindow(MainActivity.this, url, title);
 
             final UMImage image = new UMImage(MainActivity.this, R.mipmap.ep_launcher);//资源文件
             final UMWeb web = new UMWeb(url);
             web.setTitle(title);//标题
-           // web.setThumb(image);  //缩略图
+            // web.setThumb(image);  //缩略图
             web.setDescription("");//描述
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                   // boolean isAuthorize = UMShareAPI.get(MainActivity.this).isAuthorize(MainActivity.this,SHARE_MEDIA.TWITTER);
-                   // Log.e(TAG, "isAuthorize: "+isAuthorize );
+                    // boolean isAuthorize = UMShareAPI.get(MainActivity.this).isAuthorize(MainActivity.this,SHARE_MEDIA.TWITTER);
+                    // Log.e(TAG, "isAuthorize: "+isAuthorize );
 
-                    new ShareAction(MainActivity.this).withMedia(web).setDisplayList(SHARE_MEDIA.QQ,SHARE_MEDIA.WEIXIN,SHARE_MEDIA.FACEBOOK,SHARE_MEDIA.TWITTER)
+                    new ShareAction(MainActivity.this).withMedia(web).setDisplayList(SHARE_MEDIA.QQ, SHARE_MEDIA.WEIXIN, SHARE_MEDIA.FACEBOOK, SHARE_MEDIA.TWITTER)
                             .setCallback(new UMShareListener() {
                                 @Override
                                 public void onStart(SHARE_MEDIA share_media) {
@@ -831,7 +916,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
 
                                 @Override
                                 public void onError(SHARE_MEDIA share_media, Throwable throwable) {
-                                    Log.e(TAG, "onError: "+throwable.getMessage() );
+                                    Log.e(TAG, "onError: " + throwable.getMessage());
                                 }
 
                                 @Override
@@ -863,12 +948,12 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
             }
         }
     }
+
     /**
      * 分享到twitter
      * 若未安装twitter客户端，则会跳转到浏览器
-     *
      */
-    public void shareToTwitter(String url,String text) {
+    public void shareToTwitter(String url, String text) {
         //这里分享一个链接，更多分享配置参考官方介绍：https://dev.twitter.com/twitterkit/android/compose-tweets
         try {
             TweetComposer.Builder builder = new TweetComposer.Builder(MainActivity.this)
@@ -930,7 +1015,7 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
         Log.e(TAG, "dispatchKeyEvent: " + event.getKeyCode());
 
         //拦截返回键
-        if ( (event.getKeyCode() == 87)) { //右翻页
+        if ((event.getKeyCode() == 87)) { //右翻页
             //判断触摸UP事件才会进行返回事件处理
 //            if (event.getAction() == KeyEvent.ACTION_UP) {
 //                onBackPressed();
@@ -1121,9 +1206,9 @@ public class MainActivity extends Activity implements RtmpHandler.RtmpListener,
 
         boolean isConnetcted = message.isConnected;
         Log.e(TAG, "onNetWorkStateEvent: " + isConnetcted);
-        networkDisconnted.setVisibility(isConnetcted?View.GONE:View.VISIBLE);
+        networkDisconnted.setVisibility(isConnetcted ? View.GONE : View.VISIBLE);
         if (isConnetcted) {
-           webview.reload();
+            webview.reload();
         }
     }
 

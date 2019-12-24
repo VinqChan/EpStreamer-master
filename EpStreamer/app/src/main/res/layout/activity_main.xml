@@ -114,4 +114,17 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
     </FrameLayout>
+    <TextView
+        android:id="@+id/progress_tv"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:text="0%"
+        android:gravity="center"
+        android:background="@drawable/bg_circle_blue"
+        android:layout_centerVertical="true"
+        android:layout_alignParentRight="true"
+        android:textColor="#fff"
+        android:visibility="gone"
+        android:layout_marginRight="15dp"
+        />
 </RelativeLayout>
